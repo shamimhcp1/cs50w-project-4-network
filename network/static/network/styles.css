@@ -1,0 +1,10 @@
+#profile-view, #new-post {
+    display: none;
+}
+
+#messageDisplay p{
+    text-align: center;
+    padding: 10px;
+    border: 1px solid grey;
+    border-radius: 5px;
+}
