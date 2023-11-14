@@ -8,6 +8,10 @@ from .models import User, Post, Like
 
 
 def index(request):
+
+    # posts = Post.objects.all().order_by('-created_date')
+    # return JsonResponse([post.serialize() for post in posts], safe=False)
+
     return render(request, "network/index.html", {
         "posts": Post.objects.all().order_by('-created_date')
     })

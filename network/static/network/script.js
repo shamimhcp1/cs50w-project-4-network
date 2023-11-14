@@ -8,6 +8,37 @@ document.addEventListener('DOMContentLoaded', function() {
     // By default, load the all_post
     load_view('all posts');
 
+    // compose new post
+    document.querySelector('#new-post-form').onsubmit = function (event) {
+      event.preventDefault(); 
+
+      const content = document.querySelector('#new-post-content').value;
+      const csrfmiddlewaretoken = document.querySelector('#csrfmiddlewaretoken').value;
+
+      fetch('/new-post', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfmiddlewaretoken
+          },
+          body: JSON.stringify({
+              content: content
+          })
+      })
+      .then(response => response.json())
+      .then(result => {
+          console.log(result);
+          if (result.status === 'success') {
+              load_view('all posts');
+              document.querySelector('#new-post-content').value = "";
+          };
+          message_display(result);
+      });
+
+      return false;
+    };
+    // End compose new post
+
 });
 
 function message_display(result) {
@@ -49,35 +80,3 @@ function load_view(load) {
     document.querySelector('#heading-view').innerHTML = `<h3>${load.charAt(0).toUpperCase() + load.slice(1)}</h3>`;
 
 };
-
-// compose new post
-document.querySelector('#new-post-form'). onsubmit = function () {
-
-    const content = document.querySelector('#new-post-content').value;
-    const csrfmiddlewaretoken = document.querySelector('#csrfmiddlewaretoken').value;
-
-    fetch('/new-post', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfmiddlewaretoken
-        },
-      body: JSON.stringify({
-        content: content
-      })
-    })
-    .then(response => response.json())
-    .then(result => {
-        
-        console.log(result);
-        if (result.status === 'success') {                
-            load_view('all posts');
-            document.querySelector('#new-post-content').value = "";
-        };
-        message_display(result);
-    })
-
-    return false;
-};
-
-

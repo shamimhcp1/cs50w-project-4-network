@@ -20,3 +20,10 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.content}, {self.poster.username}"
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "content": self.content,
+            "created_date": self.created_date.strftime("%b %d %Y, %I:%M %p"),
+        }
