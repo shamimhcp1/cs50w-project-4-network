@@ -28,10 +28,10 @@
         {% endif %}
         <!-- End new Post -->
 
-        <div id="heading-view"><h3>All posts</h3></div>
+        <div id="heading-view" data-user-id="{{ request.user.id }}"><h3>All posts</h3></div>
 
         <!-- Post -->
-        <div id="post-view" data-user-id="{{ request.user.id }}">
+        <div id="post-view">
         </div>
         
 
@@ -46,8 +46,8 @@
                       <h5 class="card-title">{{ user.username }}</h5>
                     </div>
                     <ul class="list-group list-group-flush">
-                      <li class="list-group-item"><span class="badge badge-primary">0</span> followers</li>
-                      <li class="list-group-item"><span class="badge badge-primary">0</span> following</li>
+                      <li class="list-group-item"><span class="badge badge-primary">{{ user.followers.count }}</span> followers</li>
+                      <li class="list-group-item"><span class="badge badge-primary">{{ user.following.count }}</span> following</li>
                     </ul>
                     <div class="card-body">
                       <a href="#" class="card-link">Follow</a>
@@ -56,55 +56,17 @@
                   </div>
             </div>
             <!-- post by poster -->
-            <div class="col-md-9">
-                <div class="card mt-2">
+            <div class="col-md-9" id="poster-post">
+
+                <!-- <div class="card mt-2">
                     <div class="card-body">
                         <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
                       <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
                       <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
                       <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
                     </div>
-                </div>
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div>
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div>
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div>
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div>
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div>
+                </div> -->
+                
             </div>
           </div>
         </div>

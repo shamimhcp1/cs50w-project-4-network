@@ -26,6 +26,7 @@ def poster(request, poster_id):
 
     try:
         poster = User.objects.get(pk=poster_id)
+        time.sleep(1)
         return JsonResponse({"status": "success", "poster": poster.serialize()})
     except User.DoesNotExist:
         return JsonResponse({"status": "error", "message": "User not found"})

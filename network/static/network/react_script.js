@@ -1,7 +1,36 @@
+function PosterPostView() {
+
+  const [posterPosts, setposterPosts] = React.useState([]);
+  const loggedInUserId = parseInt(document.getElementById('heading-view').getAttribute('data-user-id'));
+
+
+  if(localStorage.getItem('load_view') == 'profile') {
+    alert('profile')
+    // fetch('/poster/' + loggedInUserId)
+    //   .then(response => response.json())
+    //   .then(poster => {
+    //     console.log(poster); 
+    //     setposterPosts(poster);    
+    // });
+  };
+
+  return (
+    <div>
+      {/* {posterPosts.map(poster => (
+        <div>{poster.id}</div>
+      ))} */}
+      <div>Hello</div>
+    </div>
+  )
+
+
+};
+ReactDOM.render(<PosterPostView />, document.querySelector("#poster-post"));
+
 function PostView() {
 
   const [posts, setPosts] = React.useState([]);
-  const loggedInUserId = parseInt(document.getElementById('post-view').getAttribute('data-user-id'));
+  const loggedInUserId = parseInt(document.getElementById('heading-view').getAttribute('data-user-id'));
   
     fetch('/posts')
     .then(response => response.json())
