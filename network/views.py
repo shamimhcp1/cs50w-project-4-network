@@ -1,4 +1,5 @@
 import json
+import time
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -9,12 +10,17 @@ from .models import User, Post, Like
 
 def index(request):
 
-    # posts = Post.objects.all().order_by('-created_date')
-    # return JsonResponse([post.serialize() for post in posts], safe=False)
-
     return render(request, "network/index.html", {
         "posts": Post.objects.all().order_by('-created_date')
     })
+
+def posts_view(request):
+    posts = Post.objects.all().order_by('-created_date')
+    
+    # Artificially delay speed of response
+    time.sleep(1)
+
+    return JsonResponse([post.serialize() for post in posts], safe=False)
 
 def poster(request, poster_id):
     return HttpResponse(poster_id)

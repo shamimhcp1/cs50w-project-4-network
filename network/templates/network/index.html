@@ -31,27 +31,7 @@
         <div id="heading-view"><h3>All posts</h3></div>
 
         <!-- Post -->
-        <div id="post-view">
-          <!-- {% for post in posts %}
-          <div class="row">
-            <div class="col-md mt-2">
-                <div class="card">
-                    <div class="card-body">
-                      <h5 class="card-title"><a href="#">{{ post.poster }}</a> 
-                        {% if user.id == post.poster.id %}
-                        <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
-                        {% endif %}
-                      </h5>
-                      <p class="card-text">{{ post.content }}</p>
-                      <p class="card-subtitle mb-2 text-muted">{{ post.created_date }}</p>
-                      <a href="#" class="card-link"><i class="fa-solid fa-heart text-danger"></i> 
-                        <span class="badge badge-primary">{{ post.likes.count }}</span>
-                      </a>
-                    </div>
-                </div>
-            </div>
-          </div>
-          {% endfor %} -->
+        <div id="post-view" data-user-id="{{ request.user.id }}">
         </div>
         
 
