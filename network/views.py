@@ -23,7 +23,12 @@ def posts_view(request):
     return JsonResponse([post.serialize() for post in posts], safe=False)
 
 def poster(request, poster_id):
-    return HttpResponse(poster_id)
+
+    try:
+        poster = User.objects.get(pk=poster_id)
+        return JsonResponse({"status": "success", "poster": poster.serialize()})
+    except User.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "User not found"})
 
 def following(request, poster_id):
     return HttpResponse(poster_id)

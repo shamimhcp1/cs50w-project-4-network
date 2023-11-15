@@ -5,6 +5,16 @@ from django.utils import timezone
 class User(AbstractUser):
     followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
 
+    def serialize(self):
+        return {
+            "id": self.id,
+            "username" : self.username,
+            "followers" : self.followers.count(),
+            "following" : self.following.count(),
+            "posts": [post.serialize() for post in self.post_set.all().order_by('-created_date')],
+
+        }
+
 class Like(models.Model):
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name="post_likes")
     user = models.ForeignKey(User, on_delete=models.CASCADE)

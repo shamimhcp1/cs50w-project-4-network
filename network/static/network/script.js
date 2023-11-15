@@ -68,6 +68,14 @@ function load_view(load) {
         document.querySelector('#profile-view').style.display = 'block';
         document.querySelector('#new-post').style.display = 'none';
         document.querySelector('#post-view').style.display = 'none';
+
+        const loggedInUserId = parseInt(document.getElementById('post-view').getAttribute('data-user-id'));
+
+        fetch('/poster/' + loggedInUserId)
+        .then(response => response.json())
+        .then(poster => {
+            console.log(poster); 
+        });
     }
 
     // show hide post view

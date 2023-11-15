@@ -6,7 +6,7 @@ function PostView() {
     fetch('/posts')
     .then(response => response.json())
     .then(posts => {
-      // console.log(posts);
+      //console.log(posts);
       setPosts(posts);    
 
     });
@@ -41,8 +41,6 @@ function PostView() {
       </div>
     );
 
-
-    
 }
 
 ReactDOM.render(<PostView />, document.querySelector("#post-view"));
