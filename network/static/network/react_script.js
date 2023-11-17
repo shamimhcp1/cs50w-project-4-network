@@ -48,7 +48,6 @@ function PostView() {
       <div>
           {posts.map(post => (
             // Inside the map function
-            
             <div className="row" key={post.id}>
               <div className="col-md mt-2">
                   <div className="card">

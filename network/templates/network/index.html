@@ -1,76 +1,15 @@
 {% extends "network/layout.html" %}
 
 {% block body %}
-    <div class="container">
-
-      <div id="messageDisplay"></div>
-
-        <!-- New Post -->
-        {% if user.is_authenticated %}
-        <div id="new-post">
-          <div class="row mt-2">
-            <div class="col-md">
-                <div class="card">
-                    <h5 class="card-header">New Post</h5>
-                    <div class="card-body">
-                      <form id="new-post-form">
-                        <input type="hidden" id="csrfmiddlewaretoken" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <div class="form-group">
-                          <textarea class="form-control" id="new-post-content" name="new-post-content" rows="3"></textarea>
-                        </div>
-                        <input type="submit" class="btn btn-primary" value="Post">
-                      </form>
-                    </div>
-                </div>
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        <!-- End new Post -->
-
-        <div id="heading-view" data-user-id="{{ request.user.id }}"><h3>All posts</h3></div>
-
-        <!-- Post -->
-        <div id="post-view">
-        </div>
-        
-
-        <!-- poster -->
-        <div id="profile-view">
-          <div class="row mt-2">
-            <!-- poster details-->
-            <div class="col-md-3">
-                <div class="card">
-                    <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png" class="card-img-top" alt="...">
-                    <div class="card-body">
-                      <h5 class="card-title">{{ user.username }}</h5>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                      <li class="list-group-item"><span class="badge badge-primary">{{ user.followers.count }}</span> followers</li>
-                      <li class="list-group-item"><span class="badge badge-primary">{{ user.following.count }}</span> following</li>
-                    </ul>
-                    <div class="card-body">
-                      <a href="#" class="card-link">Follow</a>
-                      <a href="#" class="card-link text-danger">Unfollow</a>
-                    </div>
-                  </div>
-            </div>
-            <!-- post by poster -->
-            <div class="col-md-9" id="poster-post">
-
-                <!-- <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="#">Bar</a> <a class="float-right btn btn-outline-primary btn-sm" href="#">Edit</a></h5>
-                      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                      <p class="card-subtitle mb-2 text-muted">November 12, 2023 4:01pm</p>
-                      <a href="#" class="card-link">Like <span class="badge badge-info">0</span></a>
-                    </div>
-                </div> -->
-                
-            </div>
-          </div>
-        </div>
-        <!-- end poster -->
-
-    </div>
+      {% if user.is_authenticated %}
+        <div id="user_id" data-id="{{ request.user.id }}"></div>
+        <div id="user_username" data-username="{{ request.user.username }}"></div>
+        <div id="user_is_authenticated" data-isauthenticate=True></div>
+      {% else %}
+        <div id="user_id" data-id="null"></div>
+        <div id="user_username" data-username="null"></div>
+        <div id="user_is_authenticated" data-isauthenticate=False></div>
+      {% endif %}
+      
+      <div id="root"></div>
 {% endblock %}

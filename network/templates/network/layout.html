@@ -10,52 +10,12 @@
         <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
         <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
         <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        <script type="text/babel" src="{% static 'network/my_script.js' %}"></script>
         <!-- End react script -->
-        <script src="{% static 'network/script.js' %}"></script>
         <script src="https://kit.fontawesome.com/a739db8c00.js" crossorigin="anonymous"></script>
     </head>
     <body>
-
-        <div id="Navbar">
-            <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                <a class="navbar-brand text-primary" href="{% url 'index' %}">Network</a>
-              
-                <div>
-                  <ul class="navbar-nav mr-auto">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" id="profile"  href="#"><strong><i class="fa fa-circle-user"></i> {{ user.username }}</strong></a>
-                        </li>
-                    {% endif %}
-                    <li class="nav-item">
-                      <a class="nav-link" id="all-post" href="#">All Posts</a>
-                    </li>
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" id="following" href="#">Following</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'logout' %}">Log Out</a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">Log In</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'register' %}">Register</a>
-                        </li>
-                    {% endif %}
-                  </ul>
-                </div>
-            </nav>
-        </div>
-        
-        <div class="body">
-            {% block body %}
-            {% endblock %}
-
-            <script type="text/babel" src="{% static 'network/react_script.js' %}"></script>
-
-        </div>
+        {% block body %}
+        {% endblock %}
     </body>
 </html>
