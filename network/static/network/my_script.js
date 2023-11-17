@@ -75,6 +75,38 @@ function App() {
             }
         });
     };
+
+    // Profile of poster view handle states
+    const [profileInfo, setProfileInfo] = React.useState({
+      username: '',
+      posts: [],
+      loading: false,
+    });
+
+    // Fetch user profile data based on the username
+    const fetchUserProfile = (username) => {
+      setProfileInfo({ ...profileInfo, loading: true }); // Set loading to true before fetching
+      fetch(`/profile/${username}`)
+        .then((response) => response.json())
+        .then((profileData) => {
+          console.log(profileData);
+          setProfileInfo({
+            username: profileData.poster.username,
+            posts: profileData.poster.posts,
+            loading: false, // Set loading to false after fetching
+          });
+          setCurrentView('profile');
+        })
+        .catch((error) => {
+          console.error('Error fetching user profile:', error);
+          setProfileInfo({ ...profileInfo, loading: false }); // Set loading to false in case of an error
+        });
+    };
+
+    // Handle clicks on the poster's name in post view
+    const handlePosterClick = (posterUsername) => {
+      fetchUserProfile(posterUsername);
+    };
   
     return (
       <div>
@@ -152,7 +184,7 @@ function App() {
                         <div className="col-md mt-2">
                             <div className="card">
                                 <div className="card-body">
-                                    <h5 className="card-title"><a href="#">{ post.poster }</a> 
+                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
                                     {/* show edit button if logged user equal to poster id */}
                                     {user.id === parseInt(post.poster_id) && (
                                         <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
@@ -174,7 +206,18 @@ function App() {
             <div>
                 <div id="heading-view"><h3>Profile</h3></div>
                 <div id="profile-view">
-                    {/* ... Render user profile ... */}
+                    {profileInfo.loading ? (
+                      <p>Loading profile...</p>
+                    ) : (
+                      <React.Fragment>
+                      {/* Display user profile information and posts */}
+                        <p>Username: {profileInfo.username}</p>
+                        {/* Display user posts */}
+                        {profileInfo.posts.map((post, index) => (
+                          <p key={index} className="card-text">{post.content}</p>
+                        ))}
+                      </React.Fragment>
+                    )}
                 </div>
             </div>
             )}
