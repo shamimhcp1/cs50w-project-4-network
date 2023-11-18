@@ -26,6 +26,9 @@ function App() {
     const handleNavbarItemClick = (view) => {
       setCurrentView(view); // Update currentView
       console.log(view);
+      if(view === 'profile') {
+        fetchUserProfile(user.username);
+      }
     };
 
     // fetch posts for all-posts section
@@ -78,28 +81,30 @@ function App() {
 
     // Profile of poster view handle states
     const [profileInfo, setProfileInfo] = React.useState({
+      id: '',
       username: '',
+      followers: '',
+      following: '',
       posts: [],
-      loading: false,
     });
 
     // Fetch user profile data based on the username
     const fetchUserProfile = (username) => {
-      setProfileInfo({ ...profileInfo, loading: true }); // Set loading to true before fetching
       fetch(`/profile/${username}`)
         .then((response) => response.json())
         .then((profileData) => {
           console.log(profileData);
           setProfileInfo({
+            id: profileData.poster.id,
             username: profileData.poster.username,
+            followers: profileData.poster.followers,
+            following: profileData.poster.following,
             posts: profileData.poster.posts,
-            loading: false, // Set loading to false after fetching
           });
           setCurrentView('profile');
         })
         .catch((error) => {
           console.error('Error fetching user profile:', error);
-          setProfileInfo({ ...profileInfo, loading: false }); // Set loading to false in case of an error
         });
     };
 
@@ -204,20 +209,48 @@ function App() {
 
             {currentView === 'profile' && (
             <div>
-                <div id="heading-view"><h3>Profile</h3></div>
                 <div id="profile-view">
-                    {profileInfo.loading ? (
-                      <p>Loading profile...</p>
-                    ) : (
-                      <React.Fragment>
-                      {/* Display user profile information and posts */}
-                        <p>Username: {profileInfo.username}</p>
-                        {/* Display user posts */}
-                        {profileInfo.posts.map((post, index) => (
-                          <p key={index} className="card-text">{post.content}</p>
+                    <div className="row">
+                      {/* Display Profile Info */}
+                      <div class="col-md-3">
+                        <div class="card">
+                            <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png" class="card-img-top" alt="..."/>
+                            <div class="card-body">
+                              <h5 class="card-title">{ profileInfo.username }</h5>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.followers}</span> followers</li>
+                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.following}</span> following</li>
+                            </ul>
+                            {user.is_authenticated && user.username !== profileInfo.username && (
+                                <div class="card-body">
+                                  <a href="#" class="card-link">Follow</a>
+                                  <a href="#" class="card-link text-danger">Unfollow</a>
+                                </div>
+                              )}
+                          </div>
+                      </div>
+                      {/* Display user posts */}
+                      <div className="col-md-9">
+                        {profileInfo.posts.map(post => (
+                        <div className="row" key={post.id}>
+                              <div className="card">
+                                  <div className="card-body">
+                                      <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
+                                      {/* show edit button if logged user equal to poster id */}
+                                      {user.id === parseInt(post.poster_id) && (
+                                          <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                      )}
+                                      </h5>
+                                      <p className="card-text">{ post.content }</p>
+                                      <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
+                                      <a href="#" className="card-link"><i className="fa-solid fa-heart text-danger"></i></a> <span className="badge badge-primary">{ post.likes }</span>
+                                  </div>
+                              </div>
+                          </div>
                         ))}
-                      </React.Fragment>
-                    )}
+                      </div>
+                    </div>
                 </div>
             </div>
             )}
@@ -226,7 +259,7 @@ function App() {
               <div>
                 <div id="heading-view"><h3>Following</h3></div>
                 <div id="following-view">
-                {/* ... Render the list of users the current user is following ... */}
+                  {/* ... Render the list of users the current user is following ... */}
                 </div>
               </div>
             )}
