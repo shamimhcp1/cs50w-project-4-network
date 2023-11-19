@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from .models import User, Post, Like
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
 
 
 def index(request):
@@ -17,12 +17,15 @@ def index(request):
 
 
 def posts_view(request):
-    page_number = request.GET.get('page', 1)
+    page_number = int(request.GET.get('page'))
     posts = Post.objects.all().order_by('-created_date')
     paginator = Paginator(posts, 10)  # 10 posts per page
 
-    current_page = paginator.page(page_number)
-    
+    try:
+        current_page = paginator.page(page_number)
+    except EmptyPage:
+        return JsonResponse({"status": "error", "message": "Invalid page number"})
+
     time.sleep(1)
 
     return JsonResponse({

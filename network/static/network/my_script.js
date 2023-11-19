@@ -35,21 +35,39 @@ function App() {
     const [posts, setPosts] = React.useState([]);
     const [currentPage, setCurrentPage] = React.useState(1);
     const [totalPages, setTotalPages] = React.useState(1);
+    const [hasNextPage, setHasNextPage] = React.useState(false);
+    const [hasPreviousPage, setHasPreviousPage] = React.useState(false);
     
-    if(currentView === 'all-posts') {
+    React.useEffect(() => {
+      // Fetch data only when the currentView is 'all-posts' and currentPage changes
+      if (currentView === 'all-posts') {
         fetch(`/posts?page=${currentPage}`)
-        .then(response => response.json())
-        .then(data => {
-            //console.log(posts);
-            setPosts(data.posts); // Update the posts
-            setCurrentPage(data.current_page); // Update pagination state
-            setTotalPages(data.total_pages); // Update pagination totalPages
-        });
-    }
-    // Add a function to handle pagination clicks
+          .then(response => response.json())
+          .then(data => {
+            setPosts(data.posts);
+            setTotalPages(data.total_pages);
+            setHasNextPage(data.has_next);
+            setHasPreviousPage(data.has_previous);
+          })
+          .catch(error => {
+            console.error('Error fetching posts:', error);
+          });
+      }
+    }, [currentView, currentPage]);
+    
+    // function to handle pagination clicks
     const handlePaginationClick = (page) => {
+      console.log('Pagination click initiated. Page:', page);
+
+      if (page >= 1 && page <= totalPages && page !== currentPage) {
+        console.log('Fetching data for page:', page);
         setCurrentPage(page);
+
+      } else {
+        console.log('Invalid page or same page clicked. No fetch operation.');
+      }
     };
+
 
     // Handle new post submission
     const handleNewPostSubmit = (event) => {
@@ -212,17 +230,25 @@ function App() {
                         </div>
                         </div>
                     ))}
-                    
-                    <nav aria-label="Page navigation example">
-                        <ul className="pagination">
-                            <li className="page-item"><a className="page-link" href="#">Previous</a></li>
-                            {Array.from({ length: totalPages }, (_, i) => (
-                                <li className="page-item"><a key={i} className="page-link" href="#" onClick={() => handlePaginationClick(i + 1)}>{i + 1}</a></li>
-                            ))}
-                            
-                            <li className="page-item"><a className="page-link" href="#">Next</a></li>
+                    {/* all-posts view pagination */}
+                    <div className="mt-2">
+                      <nav aria-label="Page navigation example">
+                        <ul className="pagination justify-content-center">
+                          <li className={`page-item ${!hasPreviousPage && 'disabled'}`}>
+                            <a className="page-link" href="#" onClick={() => handlePaginationClick(currentPage - 1)} tabIndex="-1" aria-disabled={!hasPreviousPage}>Previous</a>
+                          </li>
+                          {Array.from({ length: totalPages }, (_, index) => (
+                            <li key={index} className={`page-item ${currentPage === index + 1 && 'active'}`}>
+                              <a className="page-link" href="#" onClick={() => handlePaginationClick(index + 1)}>{index + 1}</a>
+                            </li>
+                          ))}
+                          <li className={`page-item ${!hasNextPage && 'disabled'}`}>
+                            <a className="page-link" href="#" onClick={() => handlePaginationClick(currentPage + 1)} aria-disabled={!hasNextPage}>Next</a>
+                          </li>
                         </ul>
-                    </nav>
+                      </nav>
+                    </div>
+                    {/* End pagination */}
                 </div>
             </div>
             )}
@@ -269,6 +295,23 @@ function App() {
                               </div>
                           </div>
                         ))}
+                        {/* profile view pagination */}
+                        <div className="mt-2">
+                          <nav aria-label="Page navigation example">
+                            <ul class="pagination justify-content-center">
+                              <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                              </li>
+                              <li class="page-item"><a class="page-link" href="#">1</a></li>
+                              <li class="page-item"><a class="page-link" href="#">2</a></li>
+                              <li class="page-item"><a class="page-link" href="#">3</a></li>
+                              <li class="page-item">
+                                <a class="page-link" href="#">Next</a>
+                              </li>
+                            </ul>
+                          </nav>
+                        </div> 
+                        {/* End bootstrap pagination */}
                       </div>
                     </div>
                 </div>

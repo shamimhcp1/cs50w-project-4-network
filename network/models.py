@@ -12,7 +12,6 @@ class User(AbstractUser):
             "followers" : self.followers.count(),
             "following" : self.following.count(),
             "posts": [post.serialize() for post in self.post_set.all().order_by('-created_date')],
-
         }
 
 class Like(models.Model):
