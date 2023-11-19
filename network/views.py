@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from .models import User, Post, Like
+from django.core.paginator import Paginator
 
 
 def index(request):
@@ -14,13 +15,24 @@ def index(request):
         "posts": Post.objects.all().order_by('-created_date')
     })
 
+
 def posts_view(request):
+    page_number = request.GET.get('page', 1)
     posts = Post.objects.all().order_by('-created_date')
+    paginator = Paginator(posts, 10)  # 10 posts per page
+
+    current_page = paginator.page(page_number)
     
-    # Artificially delay speed of response
     time.sleep(1)
 
-    return JsonResponse([post.serialize() for post in posts], safe=False)
+    return JsonResponse({
+        "status": "success",
+        "posts": [post.serialize() for post in current_page],
+        "has_next": current_page.has_next(),
+        "has_previous": current_page.has_previous(),
+        "total_pages": paginator.num_pages,
+        "current_page": current_page.number
+    })
 
 
 def poster(request, username):

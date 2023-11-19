@@ -33,14 +33,23 @@ function App() {
 
     // fetch posts for all-posts section
     const [posts, setPosts] = React.useState([]);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [totalPages, setTotalPages] = React.useState(1);
+    
     if(currentView === 'all-posts') {
-        fetch('/posts')
+        fetch(`/posts?page=${currentPage}`)
         .then(response => response.json())
-        .then(posts => {
+        .then(data => {
             //console.log(posts);
-            setPosts(posts); // Update the posts
+            setPosts(data.posts); // Update the posts
+            setCurrentPage(data.current_page); // Update pagination state
+            setTotalPages(data.total_pages); // Update pagination totalPages
         });
     }
+    // Add a function to handle pagination clicks
+    const handlePaginationClick = (page) => {
+        setCurrentPage(page);
+    };
 
     // Handle new post submission
     const handleNewPostSubmit = (event) => {
@@ -203,6 +212,17 @@ function App() {
                         </div>
                         </div>
                     ))}
+                    
+                    <nav aria-label="Page navigation example">
+                        <ul className="pagination">
+                            <li className="page-item"><a className="page-link" href="#">Previous</a></li>
+                            {Array.from({ length: totalPages }, (_, i) => (
+                                <li className="page-item"><a key={i} className="page-link" href="#" onClick={() => handlePaginationClick(i + 1)}>{i + 1}</a></li>
+                            ))}
+                            
+                            <li className="page-item"><a className="page-link" href="#">Next</a></li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
             )}
@@ -210,7 +230,7 @@ function App() {
             {currentView === 'profile' && (
             <div>
                 <div id="profile-view">
-                    <div className="row">
+                    <div className="row mt-2">
                       {/* Display Profile Info */}
                       <div class="col-md-3">
                         <div class="card">
