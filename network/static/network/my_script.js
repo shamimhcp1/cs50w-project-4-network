@@ -27,7 +27,10 @@ function App() {
       setCurrentView(view); // Update currentView
       console.log(view);
       if(view === 'profile') {
-        fetchUserProfile(user.username);
+        setProfileInfo({
+            ...profileInfo,
+            username: user.username
+        });
       }
     };
 
@@ -88,11 +91,17 @@ function App() {
         .then(result => {
             if (result.status === 'success') {
             // Fetch updated posts after creating a new post
-            fetch('/posts')
-                .then(response => response.json())
-                .then(posts => {
-                setPosts(posts); // Update the posts
-                });
+            fetch(`/posts?page=${currentPage}`)
+            .then(response => response.json())
+            .then(data => {
+                setPosts(data.posts);
+                setTotalPages(data.total_pages);
+                setHasNextPage(data.has_next);
+                setHasPreviousPage(data.has_previous);
+            })
+            .catch(error => {
+                console.error('Error fetching posts:', error);
+            });
 
             // Clear the input field
             document.getElementById('new-post-content').value = '';
@@ -112,32 +121,64 @@ function App() {
       username: '',
       followers: '',
       following: '',
-      posts: [],
     });
 
+    // fetch posts for profile view section
+    const [profilePosts, setProfilePosts] = React.useState([]);
+    const [profileCurrentPage, setProfileCurrentPage] = React.useState(1);
+    const [profileTotalPages, setProfileTotalPages] = React.useState(1);
+    const [profileHasNextPage, setProfileHasNextPage] = React.useState(false);
+    const [profileHasPreviousPage, setProfileHasPreviousPage] = React.useState(false);
+
     // Fetch user profile data based on the username
-    const fetchUserProfile = (username) => {
-      fetch(`/profile/${username}`)
+    const fetchUserProfile = (username, page) => {
+        fetch(`/profile/${username}?page=${page}`)
         .then((response) => response.json())
         .then((profileData) => {
-          console.log(profileData);
-          setProfileInfo({
-            id: profileData.poster.id,
-            username: profileData.poster.username,
-            followers: profileData.poster.followers,
-            following: profileData.poster.following,
-            posts: profileData.poster.posts,
-          });
-          setCurrentView('profile');
+            console.log(profileData);
+            // Update profile pagination information
+            setProfileTotalPages(profileData.total_pages);
+            setProfileHasNextPage(profileData.has_next);
+            setProfileHasPreviousPage(profileData.has_previous);
+            // Update profile posts
+            setProfilePosts(profileData.posts);
+            setProfileInfo({
+                id: profileData.poster.id,
+                username: profileData.poster.username,
+                followers: profileData.poster.followers,
+                following: profileData.poster.following,
+            });
         })
         .catch((error) => {
-          console.error('Error fetching user profile:', error);
+            console.error('Error fetching user profile:', error);
         });
     };
 
+    // Using React.useEffect for fetching user profile
+    React.useEffect(() => {
+        if (currentView === 'profile') {
+            fetchUserProfile(profileInfo.username, profileCurrentPage);
+        }
+    }, [currentView, profileInfo.username, profileCurrentPage]);
+
+    // Handle clicks on the profile pagination 
+    const handleProfilePaginationClick = (page) => {
+        if (page >= 1 && page <= profileTotalPages && page !== profileCurrentPage) {
+            console.log('Fetching data for page:', page);
+            setProfileCurrentPage(page);
+        } else {
+          console.log('Invalid page or same page clicked. No fetch operation.');
+        }
+      };
+      
+
     // Handle clicks on the poster's name in post view
     const handlePosterClick = (posterUsername) => {
-      fetchUserProfile(posterUsername);
+        setCurrentView('profile'); // Update currentView
+        setProfileInfo({
+            ...profileInfo,
+            username: posterUsername
+        });
     };
   
     return (
@@ -278,7 +319,7 @@ function App() {
                       </div>
                       {/* Display user posts */}
                       <div className="col-md-9">
-                        {profileInfo.posts.map(post => (
+                        {profilePosts.map(post => (
                         <div className="row" key={post.id}>
                               <div className="card">
                                   <div className="card-body">
@@ -297,21 +338,23 @@ function App() {
                         ))}
                         {/* profile view pagination */}
                         <div className="mt-2">
-                          <nav aria-label="Page navigation example">
-                            <ul class="pagination justify-content-center">
-                              <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                              </li>
-                              <li class="page-item"><a class="page-link" href="#">1</a></li>
-                              <li class="page-item"><a class="page-link" href="#">2</a></li>
-                              <li class="page-item"><a class="page-link" href="#">3</a></li>
-                              <li class="page-item">
-                                <a class="page-link" href="#">Next</a>
-                              </li>
-                            </ul>
-                          </nav>
-                        </div> 
-                        {/* End bootstrap pagination */}
+                            <nav aria-label="Page navigation example">
+                                <ul className="pagination justify-content-center">
+                                <li className={`page-item ${!profileHasPreviousPage && 'disabled'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(profileCurrentPage - 1)} tabIndex="-1" aria-disabled={!profileHasPreviousPage}>Previous</a>
+                                </li>
+                                {Array.from({ length: profileTotalPages }, (_, index) => (
+                                    <li key={index} className={`page-item ${profileCurrentPage === index + 1 && 'active'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(index + 1)}>{index + 1}</a>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${!profileHasNextPage && 'disabled'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(profileCurrentPage + 1)} aria-disabled={!profileHasNextPage}>Next</a>
+                                </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        {/* End profile view pagination */}
                       </div>
                     </div>
                 </div>

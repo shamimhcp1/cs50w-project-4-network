@@ -39,13 +39,31 @@ def posts_view(request):
 
 
 def poster(request, username):
-    # Fetch the user and their posts
     try:
         poster = User.objects.get(username=username)
+        posts = Post.objects.filter(poster=poster).order_by('-created_date')
+        page_number = int(request.GET.get('page'))
+        paginator = Paginator(posts, 10)
+
+        try:
+            current_page = paginator.page(page_number)
+        except EmptyPage:
+            return JsonResponse({"status": "error", "message": "Invalid page number"})
+
         time.sleep(1)
-        return JsonResponse({"status": "success", "poster": poster.serialize()})
+
+        return JsonResponse({
+            "status": "success",
+            "poster": poster.serialize(),
+            "posts": [post.serialize() for post in current_page],
+            "has_next": current_page.has_next(),
+            "has_previous": current_page.has_previous(),
+            "total_pages": paginator.num_pages,
+            "current_page": current_page.number
+        })
     except User.DoesNotExist:
         return JsonResponse({"status": "error", "message": "User not found"})
+
 
 def following(request, username):
     return HttpResponse(username)
