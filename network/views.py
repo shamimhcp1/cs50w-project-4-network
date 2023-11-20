@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from .models import User, Post, Like
 from django.core.paginator import Paginator, EmptyPage
+from django.contrib.auth.decorators import login_required
 
 
 def index(request):
@@ -26,7 +27,7 @@ def posts_view(request):
     except EmptyPage:
         return JsonResponse({"status": "error", "message": "Invalid page number"})
 
-    time.sleep(1)
+    # time.sleep(1)
 
     return JsonResponse({
         "status": "success",
@@ -50,7 +51,7 @@ def poster(request, username):
         except EmptyPage:
             return JsonResponse({"status": "error", "message": "Invalid page number"})
 
-        time.sleep(1)
+        # time.sleep(1)
 
         return JsonResponse({
             "status": "success",
@@ -64,9 +65,38 @@ def poster(request, username):
     except User.DoesNotExist:
         return JsonResponse({"status": "error", "message": "User not found"})
 
+@login_required
+def following_view(request):
 
-def following(request, username):
-    return HttpResponse(username)
+    user = request.user
+    followers_posts = Post.objects.filter(poster__in=user.followers.all()).order_by('-created_date')
+    page_number = int(request.GET.get('page'))
+    paginator = Paginator(followers_posts, 10)
+
+    try:
+        current_page = paginator.page(page_number)
+    except EmptyPage:
+        return JsonResponse({"status": "error", "message": "Invalid page number"})
+
+    return JsonResponse({
+        "status": "success",
+        "posts": [post.serialize() for post in current_page],
+        "has_next": current_page.has_next(),
+        "has_previous": current_page.has_previous(),
+        "total_pages": paginator.num_pages,
+        "current_page": current_page.number
+    })
+
+@login_required
+def update_following(request):
+    user = request.user
+    getUsername = request.GET.get('user')
+    followingUsername = User.objects.get(username=getUsername)
+    return JsonResponse({
+        "status": "success",
+        "followingUsername" : followingUsername,
+    })
+
 
 # create new post
 def new_post(request):

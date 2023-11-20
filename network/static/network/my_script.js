@@ -108,9 +108,17 @@ function App() {
 
             // Optionally display a success message
             document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
+            // Hide the message display after 5 seconds
+            setTimeout(() => {
+                document.getElementById('messageDisplay').innerHTML = '';
+            }, 5000);
             } else {
             // Display an error message if the post creation fails
             document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
+            // Hide the message display after 5 seconds
+            setTimeout(() => {
+                document.getElementById('messageDisplay').innerHTML = '';
+            }, 5000);
             }
         });
     };
@@ -180,7 +188,57 @@ function App() {
             username: posterUsername
         });
     };
-  
+
+    // Posts by following state
+    const [followingPosts, setFollowingPosts] = React.useState([]);
+    const [followingCurrentPage, setFollowingCurrentPage] = React.useState(1);
+    const [followingTotalPages, setFollowingTotalPages] = React.useState(1);
+    const [followingHasNextPage, setFollowingHasNextPage] = React.useState(false);
+    const [followingHasPreviousPage, setFollowingHasPreviousPage] = React.useState(false);
+
+    // fetch following posts when the currentView is 'following'
+    React.useEffect(() => {
+      if (currentView === 'following') {
+        fetch(`/following?page=${followingCurrentPage}`)
+          .then(response => response.json())
+          .then(followingData => {
+            console.log(followingData);
+            // Update profile pagination information
+            setFollowingTotalPages(followingData.total_pages);
+            setFollowingHasNextPage(followingData.has_next);
+            setFollowingHasPreviousPage(followingData.has_previous);
+            setFollowingPosts(followingData.posts);
+          })
+          .catch(error => {
+            console.error('Error fetching following posts:', error);
+          });
+      }
+    }, [currentView, followingCurrentPage]);
+    
+    // Handle clicks on the following pagination 
+    const handleFollowingPaginationClick = (page) => {
+      if (page >= 1 && page <= followingTotalPages && page !== followingCurrentPage) {
+          console.log('Fetching data for page:', page);
+          setFollowingCurrentPage(page);
+      } else {
+        console.log('Invalid page or same page clicked. No fetch operation.');
+      }
+    };
+
+    // follow user or Unfollow user on clicks
+    const handleFollowUnfollow = (followingUsername) => {
+      console.log('Follow / Unfollow:', followingUsername);
+      fetch(`/update-following?user=${followingUsername}`)
+          .then(response => response.json())
+          .then(data => {
+            console.log(data);
+          })
+          .catch(error => {
+            console.error('Error fetching following updates:', error);
+          });
+    };
+
+
     return (
       <div>
           {/* Navbar */}
@@ -311,8 +369,8 @@ function App() {
                             </ul>
                             {user.is_authenticated && user.username !== profileInfo.username && (
                                 <div class="card-body">
-                                  <a href="#" class="card-link">Follow</a>
-                                  <a href="#" class="card-link text-danger">Unfollow</a>
+                                  <a href="#" class="card-link" onClick={() => handleFollowUnfollow(profileInfo.username)}>Follow</a>
+                                  <a href="#" class="card-link text-danger" onClick={() => handleFollowUnfollow(profileInfo.username)}>Unfollow</a>
                                 </div>
                               )}
                           </div>
@@ -365,7 +423,45 @@ function App() {
               <div>
                 <div id="heading-view"><h3>Following</h3></div>
                 <div id="following-view">
-                  {/* ... Render the list of users the current user is following ... */}
+                  {/* ... Render the list of posts the current user is following ... */}
+                  {followingPosts.map(post => (
+                      <div className="row" key={post.id}>
+                        <div className="col-md mt-2">
+                            <div className="card">
+                                <div className="card-body">
+                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
+                                    {/* show edit button if logged user equal to poster id */}
+                                    {user.id === parseInt(post.poster_id) && (
+                                        <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                    )}
+                                    </h5>
+                                    <p className="card-text">{ post.content }</p>
+                                    <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
+                                    <a href="#" className="card-link"><i className="fa-solid fa-heart text-danger"></i></a> <span className="badge badge-primary">{ post.likes }</span>
+                                </div>
+                            </div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* following view pagination */}
+                    <div className="mt-2">
+                            <nav aria-label="Page navigation example">
+                                <ul className="pagination justify-content-center">
+                                <li className={`page-item ${!followingHasPreviousPage && 'disabled'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(followingCurrentPage - 1)} tabIndex="-1" aria-disabled={!followingHasPreviousPage}>Previous</a>
+                                </li>
+                                {Array.from({ length: followingTotalPages }, (_, index) => (
+                                    <li key={index} className={`page-item ${followingCurrentPage === index + 1 && 'active'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(index + 1)}>{index + 1}</a>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${!followingHasNextPage && 'disabled'}`}>
+                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(followingCurrentPage + 1)} aria-disabled={!followingHasNextPage}>Next</a>
+                                </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        {/* End profile view pagination */}
                 </div>
               </div>
             )}
