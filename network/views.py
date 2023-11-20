@@ -8,6 +8,7 @@ from django.urls import reverse
 from .models import User, Post, Like
 from django.core.paginator import Paginator, EmptyPage
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 
 
 def index(request):
@@ -41,11 +42,22 @@ def posts_view(request):
 
 def poster(request, username):
     try:
-        poster = User.objects.get(username=username)
-        posts = Post.objects.filter(poster=poster).order_by('-created_date')
+        profileUser = User.objects.get(username=username)
+        posts = Post.objects.filter(poster=profileUser).order_by('-created_date')
         page_number = int(request.GET.get('page'))
         paginator = Paginator(posts, 10)
+        
+        is_following = 'N/A'
 
+        # Check if the request has a user (logged-in or logged-out)
+        if request.user.is_authenticated:
+            user = User.objects.get(pk=request.user.id)
+            if profileUser != user:
+                if profileUser in user.followers.all():
+                    is_following = True
+                else:
+                    is_following = False
+           
         try:
             current_page = paginator.page(page_number)
         except EmptyPage:
@@ -55,14 +67,15 @@ def poster(request, username):
 
         return JsonResponse({
             "status": "success",
-            "poster": poster.serialize(),
+            "poster": profileUser.serialize(),
             "posts": [post.serialize() for post in current_page],
             "has_next": current_page.has_next(),
             "has_previous": current_page.has_previous(),
             "total_pages": paginator.num_pages,
-            "current_page": current_page.number
+            "current_page": current_page.number,
+            "is_following": is_following,
         })
-    except User.DoesNotExist:
+    except profileUser.DoesNotExist:
         return JsonResponse({"status": "error", "message": "User not found"})
 
 @login_required
@@ -87,18 +100,28 @@ def following_view(request):
         "current_page": current_page.number
     })
 
+
 @login_required
 def update_following(request):
+    username_to_follow = request.GET.get('username')
+    user_to_follow = get_object_or_404(User, username=username_to_follow)
     user = request.user
-    getUsername = request.GET.get('user')
-    followingUsername = User.objects.get(username=getUsername)
-    return JsonResponse({
-        "status": "success",
-        "followingUsername" : followingUsername,
-    })
+
+    if user_to_follow == user:
+        return JsonResponse({'error': 'Cannot follow/unfollow yourself'})
+
+    if user_to_follow in user.followers.all():
+        user.followers.remove(user_to_follow)
+        is_following = False
+    else:
+        user.followers.add(user_to_follow)
+        is_following = True
+
+    return JsonResponse({'status': 'success', 'is_following': is_following})
 
 
 # create new post
+@login_required
 def new_post(request):
     if request.method == 'POST':
         data = json.loads(request.body)

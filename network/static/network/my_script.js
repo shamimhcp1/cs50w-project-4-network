@@ -19,7 +19,6 @@ function App() {
         is_authenticated: isAuthenticated,
       });
     }, []); // Empty dependency array ensures the effect runs only once after the initial render
-  
     
     // currentView handle states
     const [currentView, setCurrentView] = React.useState('all-posts');
@@ -70,57 +69,67 @@ function App() {
         console.log('Invalid page or same page clicked. No fetch operation.');
       }
     };
-
+    
 
     // Handle new post submission
     const handleNewPostSubmit = (event) => {
         event.preventDefault();
 
         const newPostContent = document.getElementById('new-post-content').value;
-
-        // Send a POST request to create a new post
-        fetch('/new-post', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken'), // Include the CSRF token
-        },
-        body: JSON.stringify({ content: newPostContent }),
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') {
-            // Fetch updated posts after creating a new post
-            fetch(`/posts?page=${currentPage}`)
-            .then(response => response.json())
-            .then(data => {
-                setPosts(data.posts);
-                setTotalPages(data.total_pages);
-                setHasNextPage(data.has_next);
-                setHasPreviousPage(data.has_previous);
+        if(newPostContent.length > 0 ) {
+            // Send a POST request to create a new post
+            fetch('/new-post', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'), // Include the CSRF token
+            },
+            body: JSON.stringify({ content: newPostContent }),
             })
-            .catch(error => {
-                console.error('Error fetching posts:', error);
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    // Fetch updated posts after creating a new post
+                    fetch(`/posts?page=${currentPage}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        setPosts(data.posts);
+                        setTotalPages(data.total_pages);
+                        setHasNextPage(data.has_next);
+                        setHasPreviousPage(data.has_previous);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching posts:', error);
+                    });
+        
+                    // Clear the input field
+                    document.getElementById('new-post-content').value = '';
+        
+                    // Optionally display a success message
+                    document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
+                    // Hide the message display after 5 seconds
+                    setTimeout(() => {
+                        document.getElementById('messageDisplay').innerHTML = '';
+                    }, 3000);
+                } else {
+                    // Display an error message if the post creation fails
+                    document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
+                    // Hide the message display after 5 seconds
+                    setTimeout(() => {
+                        document.getElementById('messageDisplay').innerHTML = '';
+                    }, 3000);
+                }
             });
-
-            // Clear the input field
-            document.getElementById('new-post-content').value = '';
-
-            // Optionally display a success message
-            document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
-            // Hide the message display after 5 seconds
-            setTimeout(() => {
-                document.getElementById('messageDisplay').innerHTML = '';
-            }, 5000);
-            } else {
+        } else {
             // Display an error message if the post creation fails
-            document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
+            document.getElementById('messageDisplay').innerHTML = `<p>Warning! you can't post an empty post!</p>`;
             // Hide the message display after 5 seconds
             setTimeout(() => {
                 document.getElementById('messageDisplay').innerHTML = '';
-            }, 5000);
-            }
-        });
+            }, 3000);
+        }
+
+        
     };
 
     // Profile of poster view handle states
@@ -129,6 +138,7 @@ function App() {
       username: '',
       followers: '',
       following: '',
+      isFollowing: 'N/A',
     });
 
     // fetch posts for profile view section
@@ -155,6 +165,7 @@ function App() {
                 username: profileData.poster.username,
                 followers: profileData.poster.followers,
                 following: profileData.poster.following,
+                isFollowing: profileData.is_following,
             });
         })
         .catch((error) => {
@@ -167,7 +178,7 @@ function App() {
         if (currentView === 'profile') {
             fetchUserProfile(profileInfo.username, profileCurrentPage);
         }
-    }, [currentView, profileInfo.username, profileCurrentPage]);
+    }, [currentView, profileInfo.username, profileInfo.isFollowing, profileCurrentPage]);
 
     // Handle clicks on the profile pagination 
     const handleProfilePaginationClick = (page) => {
@@ -226,12 +237,16 @@ function App() {
     };
 
     // follow user or Unfollow user on clicks
-    const handleFollowUnfollow = (followingUsername) => {
-      console.log('Follow / Unfollow:', followingUsername);
-      fetch(`/update-following?user=${followingUsername}`)
+    const handleFollowUnfollow = () => {
+      fetch(`/update-following?username=${profileInfo.username}`)
           .then(response => response.json())
           .then(data => {
             console.log(data);
+            // Update the following status in profileInfo
+            setProfileInfo({
+                ...profileInfo,
+                isFollowing: data.is_following,
+            });
           })
           .catch(error => {
             console.error('Error fetching following updates:', error);
@@ -300,7 +315,7 @@ function App() {
                                     <div class="form-group">
                                         <textarea class="form-control" id="new-post-content" name="new-post-content" rows="3"></textarea>
                                     </div>
-                                    <input type="submit" class="btn btn-primary" value="Post"/>
+                                    <input type="submit" id="post-btn" class="btn btn-primary" value="Post"/>
                                 </form>
                             </div>
                         </div>
@@ -364,13 +379,16 @@ function App() {
                               <h5 class="card-title">{ profileInfo.username }</h5>
                             </div>
                             <ul class="list-group list-group-flush">
-                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.followers}</span> followers</li>
-                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.following}</span> following</li>
+                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.following}</span> followers</li>
+                              <li class="list-group-item"><span class="badge badge-primary">{profileInfo.followers}</span> following</li>
                             </ul>
                             {user.is_authenticated && user.username !== profileInfo.username && (
                                 <div class="card-body">
-                                  <a href="#" class="card-link" onClick={() => handleFollowUnfollow(profileInfo.username)}>Follow</a>
-                                  <a href="#" class="card-link text-danger" onClick={() => handleFollowUnfollow(profileInfo.username)}>Unfollow</a>
+                                    {profileInfo.isFollowing ? (
+                                        <a href="#" class="card-link text-danger" onClick={() => handleFollowUnfollow()}>Unfollow</a>
+                                    ) : (
+                                        <a href="#" class="card-link" onClick={() => handleFollowUnfollow()}>Follow</a>
+                                    )}
                                 </div>
                               )}
                           </div>
