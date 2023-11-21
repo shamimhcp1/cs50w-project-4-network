@@ -122,7 +122,7 @@ function App() {
             });
         } else {
             // Display an error message if the post creation fails
-            document.getElementById('messageDisplay').innerHTML = `<p>Warning! you can't post an empty post!</p>`;
+            document.getElementById('messageDisplay').innerHTML = `<p>Warning! You can't post an empty post!</p>`;
             // Hide the message display after 5 seconds
             setTimeout(() => {
                 document.getElementById('messageDisplay').innerHTML = '';
@@ -253,6 +253,57 @@ function App() {
           });
     };
 
+    const [likedPosts, setLikedPosts] = React.useState([]);
+
+    // Fetch liked posts when the component mounts
+    React.useEffect(() => {
+        if (user.is_authenticated) {
+            fetch('/liked-posts')  // Create a Django view to get liked posts for the logged-in user
+                .then(response => response.json())
+                .then(data => setLikedPosts(data.liked_posts))
+                .catch(error => console.error('Error fetching liked posts:', error));
+        }
+    }, [user.is_authenticated]);
+
+    const handleLikeButton = (postId) => {
+      // Check if the post is liked or not
+      if (likedPosts.includes(postId)) {
+          // Unlike the post
+          fetch(`/unlike/${postId}/`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken'),
+              },
+          })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      // Update likedPosts state
+                      setLikedPosts(likedPosts.filter(id => id !== postId));
+                  }
+              })
+              .catch(error => console.error('Error unliking post:', error));
+      } else {
+          // Like the post
+          fetch(`/like/${postId}/`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken'),
+              },
+          })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      // Update likedPosts state
+                      setLikedPosts([...likedPosts, postId]);
+                  }
+              })
+              .catch(error => console.error('Error liking post:', error));
+      }
+    };
+  
 
     return (
       <div>
@@ -338,7 +389,13 @@ function App() {
                                     </h5>
                                     <p className="card-text">{ post.content }</p>
                                     <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                    <a href="#" className="card-link"><i className="fa-solid fa-heart text-danger"></i></a> <span className="badge badge-primary">{ post.likes }</span>
+                                    <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                        {likedPosts.includes(post.id) ? (
+                                            <i className="fa-solid fa-heart text-danger"></i>
+                                        ) : (
+                                            <i className="fa-regular fa-heart"></i>
+                                        )}
+                                    </a> <span className="badge badge-secondary">{ post.likes }</span>
                                 </div>
                             </div>
                         </div>
@@ -407,7 +464,13 @@ function App() {
                                       </h5>
                                       <p className="card-text">{ post.content }</p>
                                       <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                      <a href="#" className="card-link"><i className="fa-solid fa-heart text-danger"></i></a> <span className="badge badge-primary">{ post.likes }</span>
+                                      <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                        {likedPosts.includes(post.id) ? (
+                                            <i className="fa-solid fa-heart text-danger"></i>
+                                        ) : (
+                                            <i className="fa-regular fa-heart"></i>
+                                        )}
+                                      </a> <span className="badge badge-secondary">{ post.likes }</span>
                                   </div>
                               </div>
                           </div>
@@ -455,7 +518,13 @@ function App() {
                                     </h5>
                                     <p className="card-text">{ post.content }</p>
                                     <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                    <a href="#" className="card-link"><i className="fa-solid fa-heart text-danger"></i></a> <span className="badge badge-primary">{ post.likes }</span>
+                                    <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                        {likedPosts.includes(post.id) ? (
+                                            <i className="fa-solid fa-heart text-danger"></i>
+                                        ) : (
+                                            <i className="fa-regular fa-heart"></i>
+                                        )}
+                                    </a> <span className="badge badge-secondary">{ post.likes }</span>
                                 </div>
                             </div>
                         </div>

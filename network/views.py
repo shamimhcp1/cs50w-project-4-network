@@ -9,14 +9,13 @@ from .models import User, Post, Like
 from django.core.paginator import Paginator, EmptyPage
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 
 
 def index(request):
-
     return render(request, "network/index.html", {
         "posts": Post.objects.all().order_by('-created_date')
     })
-
 
 def posts_view(request):
     page_number = int(request.GET.get('page'))
@@ -38,7 +37,6 @@ def posts_view(request):
         "total_pages": paginator.num_pages,
         "current_page": current_page.number
     })
-
 
 def poster(request, username):
     try:
@@ -78,7 +76,7 @@ def poster(request, username):
     except profileUser.DoesNotExist:
         return JsonResponse({"status": "error", "message": "User not found"})
 
-@login_required
+@login_required(login_url='login')
 def following_view(request):
 
     user = request.user
@@ -100,8 +98,14 @@ def following_view(request):
         "current_page": current_page.number
     })
 
-
 @login_required
+def liked_posts(request):
+    user = request.user
+    liked_post_ids = Like.objects.filter(user=user).values_list('post_id', flat=True)
+    return JsonResponse({'liked_posts': list(liked_post_ids)})
+
+
+@login_required(login_url='login')
 def update_following(request):
     username_to_follow = request.GET.get('username')
     user_to_follow = get_object_or_404(User, username=username_to_follow)
@@ -119,9 +123,40 @@ def update_following(request):
 
     return JsonResponse({'status': 'success', 'is_following': is_following})
 
+@csrf_exempt
+def like_post(request, post_id):
+    if request.method == 'POST':
+        post = Post.objects.get(pk=post_id)
+        user = request.user
+
+        # Check if the user has already liked the post
+        if Like.objects.filter(post=post, user=user).exists():
+            return JsonResponse({'status': 'error', 'message': 'Post already liked'})
+
+        # Create a new Like object
+        like = Like(post=post, user=user)
+        like.save()
+
+        return JsonResponse({'status': 'success', 'message': 'Post liked'})
+
+@csrf_exempt
+def unlike_post(request, post_id):
+    if request.method == 'POST':
+        post = Post.objects.get(pk=post_id)
+        user = request.user
+
+        # Check if the user has liked the post
+        like = Like.objects.filter(post=post, user=user).first()
+        if not like:
+            return JsonResponse({'status': 'error', 'message': 'Post not liked'})
+
+        # Delete the Like object
+        like.delete()
+
+        return JsonResponse({'status': 'success', 'message': 'Post unliked'})
 
 # create new post
-@login_required
+@login_required(login_url='login')
 def new_post(request):
     if request.method == 'POST':
         data = json.loads(request.body)
