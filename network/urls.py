@@ -11,6 +11,7 @@ urlpatterns = [
 
     # network url
     path("new-post", views.new_post, name="new_post"),
+    path("edit-post", views.edit_post, name="edit_post"),
     path("posts", views.posts_view, name="posts_view"),
     path("profile/<str:username>", views.poster, name="poster"),
     path("following", views.following_view, name="following_view"),

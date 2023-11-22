@@ -109,7 +109,7 @@ function App() {
                     // Clear the input field
                     document.getElementById('new-post-content').value = '';
         
-                    // Optionally display a success message
+                    // display a success message
                     document.getElementById('messageDisplay').innerHTML = `<p>${result.message}</p>`;
                     // Hide the message display after 5 seconds
                     setTimeout(() => {
@@ -326,7 +326,58 @@ function App() {
         fetchFollowingPosts(currentView, followingCurrentPage);
       }
     };
-  
+
+    // state to track the currently edited post
+    const [isEditModalVisible, setEditModalVisible ] = React.useState();
+    const [editedPost, setEditedPost] = React.useState({
+      postId: null,
+      content: '',
+    });
+    
+    const handleEditButtonClick = (post) => {
+      setEditedPost({
+        postId: post.id,
+        content: post.content,
+      });
+      // Open modal for editing
+      setEditModalVisible(true);
+    };
+
+    const handleEditPostSubmit = () => {
+      fetch(`/edit-post`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ 
+          post_id: editedPost.postId,
+          content: editedPost.content 
+        }),
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.status === 'success') {
+            // Update the UI with the edited post
+            const updatedPosts = posts.map(post =>
+              post.id === editedPost.postId ? { ...post, content: editedPost.content } : post
+            );
+            setPosts(updatedPosts);
+    
+            // Close the modal
+            setEditModalVisible(false);
+            // display a success message
+            document.getElementById('messageDisplay').innerHTML = `<p>${result.succes_message}</p>`;
+            // Hide the message display after 5 seconds
+            setTimeout(() => {
+                document.getElementById('messageDisplay').innerHTML = '';
+            }, 3000);
+          }
+        })
+        .catch(error => {
+          console.error('Error editing post:', error);
+        });
+    };
 
     return (
       <div>
@@ -407,7 +458,7 @@ function App() {
                                       <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
                                       {/* show edit button if logged user equal to poster id */}
                                       {user.id === parseInt(post.poster_id) && (
-                                          <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
                                       )}
                                       </h5>
                                       <p className="card-text">{ post.content }</p>
@@ -484,7 +535,7 @@ function App() {
                                       <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
                                       {/* show edit button if logged user equal to poster id */}
                                       {user.id === parseInt(post.poster_id) && (
-                                          <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
                                       )}
                                       </h5>
                                       <p className="card-text">{ post.content }</p>
@@ -538,7 +589,7 @@ function App() {
                                     <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
                                     {/* show edit button if logged user equal to poster id */}
                                     {user.id === parseInt(post.poster_id) && (
-                                        <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                        <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
                                     )}
                                     </h5>
                                     <p className="card-text">{ post.content }</p>
@@ -577,8 +628,34 @@ function App() {
                 </div>
               </div>
             )}
-  
-            {/* ... Other views ... */}
+
+            {/* Edit post modal */}
+            <div className="modal" tabIndex="-1" role="dialog" style={{ display: isEditModalVisible ? 'block' : 'none' }}>
+            <div className="modal-dialog" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Edit Post</h5>
+                  <button type="button" className="close" data-dismiss="modal" aria-label="Close" onClick={() => setEditModalVisible(false)}>
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <form>
+                    <div className="form-group">
+                      <label htmlFor="editedPostContent">Edit Post Content:</label>
+                      <textarea className="form-control" id="editedPostContent" value={editedPost.content} onChange={(e) => setEditedPost({ ...editedPost, content: e.target.value })} rows="6"/>
+                    </div>
+                  </form>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" data-dismiss="modal" onClick={() => setEditModalVisible(false)}>Close</button>
+                  <button type="button" className="btn btn-primary" onClick={handleEditPostSubmit}>Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+            {/* ... Here I can add other views ... */}
           </div>
         </div>
       </div>

@@ -168,6 +168,28 @@ def new_post(request):
         return JsonResponse({'status': 'success', 'message': 'Post created successfully!'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+    
+# Edit post
+@login_required(login_url='login')
+def edit_post(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            post_id = data.get('post_id', '')
+            new_content = data.get('content', '')
+            post = get_object_or_404(Post, id=post_id, poster=request.user)
+            post.content = new_content
+            post.save()
+
+            return JsonResponse({'status': 'success', 'succes_message': 'Post Edited successfully!'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+    
+
 
 def login_view(request):
     if request.method == "POST":
@@ -187,7 +209,7 @@ def login_view(request):
             })
     else:
         return render(request, "network/login.html")
-
+    
 
 def logout_view(request):
     logout(request)
