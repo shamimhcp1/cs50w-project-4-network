@@ -39,9 +39,8 @@ function App() {
     const [totalPages, setTotalPages] = React.useState(1);
     const [hasNextPage, setHasNextPage] = React.useState(false);
     const [hasPreviousPage, setHasPreviousPage] = React.useState(false);
-    
-    React.useEffect(() => {
-      // Fetch data only when the currentView is 'all-posts' and currentPage changes
+
+    const fetchAllPosts = (currentView, currentPage) => {
       if (currentView === 'all-posts') {
         fetch(`/posts?page=${currentPage}`)
           .then(response => response.json())
@@ -55,6 +54,11 @@ function App() {
             console.error('Error fetching posts:', error);
           });
       }
+    }
+    
+    React.useEffect(() => {
+      // Fetch data only when the currentView is 'all-posts' and currentPage changes
+      fetchAllPosts(currentView, currentPage)
     }, [currentView, currentPage]);
     
     // function to handle pagination clicks
@@ -168,7 +172,7 @@ function App() {
                 isFollowing: profileData.is_following,
             });
         })
-        .catch((error) => {
+        .catch((error) => {  
             console.error('Error fetching user profile:', error);
         });
     };
@@ -207,8 +211,8 @@ function App() {
     const [followingHasNextPage, setFollowingHasNextPage] = React.useState(false);
     const [followingHasPreviousPage, setFollowingHasPreviousPage] = React.useState(false);
 
-    // fetch following posts when the currentView is 'following'
-    React.useEffect(() => {
+
+    const fetchFollowingPosts = (currentView, followingCurrentPage) => {
       if (currentView === 'following') {
         fetch(`/following?page=${followingCurrentPage}`)
           .then(response => response.json())
@@ -224,6 +228,11 @@ function App() {
             console.error('Error fetching following posts:', error);
           });
       }
+    }
+
+    // fetch following posts when the currentView is 'following' and page changes
+    React.useEffect(() => {
+      fetchFollowingPosts(currentView, followingCurrentPage);
     }, [currentView, followingCurrentPage]);
     
     // Handle clicks on the following pagination 
@@ -258,12 +267,13 @@ function App() {
     // Fetch liked posts when the component mounts
     React.useEffect(() => {
         if (user.is_authenticated) {
-            fetch('/liked-posts')  // Create a Django view to get liked posts for the logged-in user
+            fetch('/liked-posts') 
                 .then(response => response.json())
                 .then(data => setLikedPosts(data.liked_posts))
                 .catch(error => console.error('Error fetching liked posts:', error));
         }
     }, [user.is_authenticated]);
+
 
     const handleLikeButton = (postId) => {
       // Check if the post is liked or not
@@ -281,6 +291,7 @@ function App() {
                   if (data.status === 'success') {
                       // Update likedPosts state
                       setLikedPosts(likedPosts.filter(id => id !== postId));
+                      fetchPostsByLikeButton(currentView, profileCurrentPage, profileInfo);
                   }
               })
               .catch(error => console.error('Error unliking post:', error));
@@ -298,9 +309,21 @@ function App() {
                   if (data.status === 'success') {
                       // Update likedPosts state
                       setLikedPosts([...likedPosts, postId]);
+                      fetchPostsByLikeButton(currentView, profileCurrentPage, profileInfo);
                   }
               })
               .catch(error => console.error('Error liking post:', error));
+      }
+    };
+
+    // Function to fetch posts data after like or unlike
+    const fetchPostsByLikeButton = (currentView, profileCurrentPage, profileInfo) => {
+      if (currentView === 'all-posts') {
+        fetchAllPosts(currentView, currentPage)
+      } else if (currentView === 'profile') {
+        fetchUserProfile(profileInfo.username, profileCurrentPage);
+      } else if (currentView === 'following') {
+        fetchFollowingPosts(currentView, followingCurrentPage);
       }
     };
   
@@ -378,28 +401,30 @@ function App() {
                 <div id="post-view">
                     {posts.map(post => (
                         <div className="row" key={post.id}>
-                        <div className="col-md mt-2">
-                            <div className="card">
-                                <div className="card-body">
-                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
-                                    {/* show edit button if logged user equal to poster id */}
-                                    {user.id === parseInt(post.poster_id) && (
-                                        <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
-                                    )}
-                                    </h5>
-                                    <p className="card-text">{ post.content }</p>
-                                    <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                    <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
-                                        {likedPosts.includes(post.id) ? (
-                                            <i className="fa-solid fa-heart text-danger"></i>
-                                        ) : (
-                                            <i className="fa-regular fa-heart"></i>
-                                        )}
-                                    </a> <span className="badge badge-secondary">{ post.likes }</span>
-                                </div>
-                            </div>
-                        </div>
-                        </div>
+                          <div className="col-md mt-2">
+                              <div className="card">
+                                  <div className="card-body">
+                                      <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
+                                      {/* show edit button if logged user equal to poster id */}
+                                      {user.id === parseInt(post.poster_id) && (
+                                          <a className="float-right btn btn-outline-primary btn-sm" href="#">Edit</a>
+                                      )}
+                                      </h5>
+                                      <p className="card-text">{ post.content }</p>
+                                      <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
+                                      <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                          {likedPosts.includes(post.id) ? (
+                                              <i className="fa-solid fa-heart text-danger"></i>
+                                          ) : (
+                                              <i className="fa-regular fa-heart"></i>
+                                          )}
+                                      </a> <span className="badge badge-secondary">{ post.likes }</span>
+                                  </div>
+                              </div>
+                          </div>
+
+                        </div> 
+
                     ))}
                     {/* all-posts view pagination */}
                     <div className="mt-2">
