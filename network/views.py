@@ -123,7 +123,7 @@ def update_following(request):
 
     return JsonResponse({'status': 'success', 'is_following': is_following})
 
-@csrf_exempt
+@login_required(login_url='login')
 def like_post(request, post_id):
     if request.method == 'POST':
         post = Post.objects.get(pk=post_id)
@@ -139,7 +139,7 @@ def like_post(request, post_id):
 
         return JsonResponse({'status': 'success', 'message': 'Post liked'})
 
-@csrf_exempt
+@login_required(login_url='login')
 def unlike_post(request, post_id):
     if request.method == 'POST':
         post = Post.objects.get(pk=post_id)

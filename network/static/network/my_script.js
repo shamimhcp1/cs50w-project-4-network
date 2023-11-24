@@ -1,4 +1,10 @@
+
 function App() {
+
+    const historyPushState = (view, page) => {
+      const url = `/${view}?page=${page}`;
+      window.history.pushState({ view, page }, null, url);
+    };
 
     const [user, setUser] = React.useState({
       id: null,
@@ -18,13 +24,54 @@ function App() {
         username: username,
         is_authenticated: isAuthenticated,
       });
+      
+      // update the URL using history.pushState
+      historyPushState(currentView, 1);
+
     }, []); // Empty dependency array ensures the effect runs only once after the initial render
+
+    React.useEffect(() => {
+      // Event listener for the popstate event
+      const handlePopstate = (event) => {
+        const state = event.state;
+        if (state) {
+          const { view, page } = state;
+          setCurrentView(view);
+  
+          // Update the current page state variable
+          if (view === 'all-posts') {
+            setCurrentPage(page);
+          } else if (view === 'profile') {
+            setProfileCurrentPage(page);
+          } else if (view === 'following') {
+            setFollowingCurrentPage(page);
+          }
+        }
+      };
+  
+      // Add the event listener
+      window.addEventListener('popstate', handlePopstate);
+  
+      // Remove the event listener on component unmount
+      return () => {
+        window.removeEventListener('popstate', handlePopstate);
+      };
+    }, []); // Empty dependency array to ensure this effect runs only once
     
     // currentView handle states
     const [currentView, setCurrentView] = React.useState('all-posts');
-    const handleNavbarItemClick = (view) => {
-      setCurrentView(view); // Update currentView
-      console.log(view);
+    const handleNavbarItemClick = (event, view) => {
+      event.preventDefault();
+      // Update currentView
+      setCurrentView(view); 
+      // start at page 1 when switching views
+      setCurrentPage(1);
+      setProfileCurrentPage(1);
+      setFollowingCurrentPage(1);
+
+      // update the URL using history.pushState
+      historyPushState(view, 1);
+
       if(view === 'profile') {
         setProfileInfo({
             ...profileInfo,
@@ -62,12 +109,16 @@ function App() {
     }, [currentView, currentPage]);
     
     // function to handle pagination clicks
-    const handlePaginationClick = (page) => {
+    const handlePaginationClick = (event, page) => {
+      event.preventDefault();
       console.log('Pagination click initiated. Page:', page);
 
       if (page >= 1 && page <= totalPages && page !== currentPage) {
         console.log('Fetching data for page:', page);
         setCurrentPage(page);
+
+        // update the URL using history.pushState
+        historyPushState(currentView, page);
 
       } else {
         console.log('Invalid page or same page clicked. No fetch operation.');
@@ -185,10 +236,15 @@ function App() {
     }, [currentView, profileInfo.username, profileInfo.isFollowing, profileCurrentPage]);
 
     // Handle clicks on the profile pagination 
-    const handleProfilePaginationClick = (page) => {
+    const handleProfilePaginationClick = (event, page) => {
+        event.preventDefault();
         if (page >= 1 && page <= profileTotalPages && page !== profileCurrentPage) {
             console.log('Fetching data for page:', page);
             setProfileCurrentPage(page);
+
+            // update the URL using history.pushState
+            historyPushState(currentView, page);
+
         } else {
           console.log('Invalid page or same page clicked. No fetch operation.');
         }
@@ -196,12 +252,16 @@ function App() {
       
 
     // Handle clicks on the poster's name in post view
-    const handlePosterClick = (posterUsername) => {
+    const handlePosterClick = (event, posterUsername) => {
+        event.preventDefault();
         setCurrentView('profile'); // Update currentView
         setProfileInfo({
             ...profileInfo,
             username: posterUsername
         });
+
+        // update the URL using history.pushState
+        historyPushState('profile', 1);
     };
 
     // Posts by following state
@@ -236,17 +296,23 @@ function App() {
     }, [currentView, followingCurrentPage]);
     
     // Handle clicks on the following pagination 
-    const handleFollowingPaginationClick = (page) => {
+    const handleFollowingPaginationClick = (event, page) => {
+      event.preventDefault();
       if (page >= 1 && page <= followingTotalPages && page !== followingCurrentPage) {
           console.log('Fetching data for page:', page);
           setFollowingCurrentPage(page);
+
+          // update the URL using history.pushState
+          historyPushState(currentView, page);
+
       } else {
         console.log('Invalid page or same page clicked. No fetch operation.');
       }
     };
 
     // follow user or Unfollow user on clicks
-    const handleFollowUnfollow = () => {
+    const handleFollowUnfollow = (event) => {
+      event.preventDefault();
       fetch(`/update-following?username=${profileInfo.username}`)
           .then(response => response.json())
           .then(data => {
@@ -275,7 +341,16 @@ function App() {
     }, [user.is_authenticated]);
 
 
-    const handleLikeButton = (postId) => {
+    const handleLikeButton = (event, postId) => {
+
+      event.preventDefault();
+
+      // Check if the user is authenticated
+      if (!user.is_authenticated) {
+        alert(`You need to be logged in to like a post.`);
+        return;
+      }
+
       // Check if the post is liked or not
       if (likedPosts.includes(postId)) {
           // Unlike the post
@@ -291,10 +366,19 @@ function App() {
                   if (data.status === 'success') {
                       // Update likedPosts state
                       setLikedPosts(likedPosts.filter(id => id !== postId));
-                      fetchPostsByLikeButton(currentView, profileCurrentPage, profileInfo);
+                      // Update likes directly in the posts state based on the current view
+                      if (currentView === 'all-posts') {
+                        setPosts(posts.map(post => post.id === postId ? { ...post, likes: post.likes - 1 } : post));
+                      } else if (currentView === 'profile') {
+                        setProfilePosts(profilePosts.map(post => post.id === postId ? { ...post, likes: post.likes - 1 } : post));
+                      } else if (currentView === 'following') {
+                        setFollowingPosts(followingPosts.map(post => post.id === postId ? { ...post, likes: post.likes - 1 } : post));
+                      }
                   }
               })
-              .catch(error => console.error('Error unliking post:', error));
+              .catch(error => {
+                console.error('Error unliking post:', error)
+              });
       } else {
           // Like the post
           fetch(`/like/${postId}/`, {
@@ -309,22 +393,21 @@ function App() {
                   if (data.status === 'success') {
                       // Update likedPosts state
                       setLikedPosts([...likedPosts, postId]);
-                      fetchPostsByLikeButton(currentView, profileCurrentPage, profileInfo);
+                      // Update likes directly in the posts state based on the current view
+                      if (currentView === 'all-posts') {
+                        setPosts(posts.map(post => post.id === postId ? { ...post, likes: post.likes + 1 } : post));
+                      } else if (currentView === 'profile') {
+                        setProfilePosts(profilePosts.map(post => post.id === postId ? { ...post, likes: post.likes + 1 } : post));
+                      } else if (currentView === 'following') {
+                        setFollowingPosts(followingPosts.map(post => post.id === postId ? { ...post, likes: post.likes + 1 } : post));
+                      }
                   }
               })
-              .catch(error => console.error('Error liking post:', error));
+              .catch(error => {
+                console.error('Error liking post:', error)
+              });
       }
-    };
-
-    // Function to fetch posts data after like or unlike
-    const fetchPostsByLikeButton = (currentView, profileCurrentPage, profileInfo) => {
-      if (currentView === 'all-posts') {
-        fetchAllPosts(currentView, currentPage)
-      } else if (currentView === 'profile') {
-        fetchUserProfile(profileInfo.username, profileCurrentPage);
-      } else if (currentView === 'following') {
-        fetchFollowingPosts(currentView, followingCurrentPage);
-      }
+      
     };
 
     // state to track the currently edited post
@@ -334,7 +417,9 @@ function App() {
       content: '',
     });
     
-    const handleEditButtonClick = (post) => {
+    const handleEditButtonClick = (event, post) => {
+      event.preventDefault();
+
       setEditedPost({
         postId: post.id,
         content: post.content,
@@ -396,17 +481,17 @@ function App() {
           <ul className="navbar-nav mr-auto">
             {user.is_authenticated && (
               <li className="nav-item">
-                <a className="nav-link" onClick={() => handleNavbarItemClick('profile')} href="#">
+                <a className="nav-link" onClick={(event) => handleNavbarItemClick(event, 'profile')} href="">
                   <strong><i className="fa fa-circle-user"></i> {user.username}</strong>
                 </a>
               </li>
             )}
             <li className="nav-item">
-              <a className="nav-link" onClick={() => handleNavbarItemClick('all-posts')} href="#">All Posts</a>
+              <a className="nav-link" onClick={(event) => handleNavbarItemClick(event, 'all-posts')} href="">All Posts</a>
             </li>
             {user.is_authenticated && (
               <li className="nav-item">
-                <a className="nav-link" onClick={() => handleNavbarItemClick('following')} href="#">Following</a>
+                <a className="nav-link" onClick={(event) => handleNavbarItemClick(event, 'following')} href="">Following</a>
               </li>
             )}
             {user.is_authenticated && (
@@ -462,15 +547,15 @@ function App() {
                           <div className="col-md mt-2">
                               <div className="card">
                                   <div className="card-body">
-                                      <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
+                                      <h5 className="card-title"><a href="" onClick={(event) => handlePosterClick(event, post.poster)}>{ post.poster }</a> 
                                       {/* show edit button if logged user equal to poster id */}
                                       {user.id === parseInt(post.poster_id) && (
-                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
+                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={(event) => handleEditButtonClick(event, post)} href="">Edit</a>
                                       )}
                                       </h5>
                                       <p className="card-text">{ post.content }</p>
                                       <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                      <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                      <a href="" className="card-link" onClick={(event) => handleLikeButton(event, post.id)}>
                                           {likedPosts.includes(post.id) ? (
                                               <i className="fa-solid fa-heart text-danger"></i>
                                           ) : (
@@ -489,15 +574,15 @@ function App() {
                       <nav aria-label="Page navigation example">
                         <ul className="pagination justify-content-center">
                           <li className={`page-item ${!hasPreviousPage && 'disabled'}`}>
-                            <a className="page-link" href="#" onClick={() => handlePaginationClick(currentPage - 1)} tabIndex="-1" aria-disabled={!hasPreviousPage}>Previous</a>
+                            <a className="page-link" href="" onClick={(event) => handlePaginationClick(event, currentPage - 1)} tabIndex="-1" aria-disabled={!hasPreviousPage}>Previous</a>
                           </li>
                           {Array.from({ length: totalPages }, (_, index) => (
                             <li key={index} className={`page-item ${currentPage === index + 1 && 'active'}`}>
-                              <a className="page-link" href="#" onClick={() => handlePaginationClick(index + 1)}>{index + 1}</a>
+                              <a className="page-link" href="" onClick={(event) => handlePaginationClick(event, index + 1)}>{index + 1}</a>
                             </li>
                           ))}
                           <li className={`page-item ${!hasNextPage && 'disabled'}`}>
-                            <a className="page-link" href="#" onClick={() => handlePaginationClick(currentPage + 1)} aria-disabled={!hasNextPage}>Next</a>
+                            <a className="page-link" href="" onClick={(event) => handlePaginationClick(event, currentPage + 1)} aria-disabled={!hasNextPage}>Next</a>
                           </li>
                         </ul>
                       </nav>
@@ -516,7 +601,7 @@ function App() {
                         <div class="card">
                             <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png" class="card-img-top" alt="..."/>
                             <div class="card-body">
-                              <h5 class="card-title">{ profileInfo.username }</h5>
+                              <h2 class="card-title">{ profileInfo.username }</h2>
                             </div>
                             <ul class="list-group list-group-flush">
                               <li class="list-group-item"><span class="badge badge-primary">{profileInfo.following}</span> followers</li>
@@ -525,9 +610,9 @@ function App() {
                             {user.is_authenticated && user.username !== profileInfo.username && (
                                 <div class="card-body">
                                     {profileInfo.isFollowing ? (
-                                        <a href="#" class="card-link text-danger" onClick={() => handleFollowUnfollow()}>Unfollow</a>
+                                        <a href="" class="card-link text-danger" onClick={(event) => handleFollowUnfollow(event)}>Unfollow</a>
                                     ) : (
-                                        <a href="#" class="card-link" onClick={() => handleFollowUnfollow()}>Follow</a>
+                                        <a href="" class="card-link" onClick={(event) => handleFollowUnfollow(event)}>Follow</a>
                                     )}
                                 </div>
                               )}
@@ -539,15 +624,15 @@ function App() {
                         <div className="row" key={post.id}>
                               <div className="card">
                                   <div className="card-body">
-                                      <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
+                                      <h5 className="card-title"><a href="" onClick={(event) => handlePosterClick(event, post.poster)}>{ post.poster }</a> 
                                       {/* show edit button if logged user equal to poster id */}
                                       {user.id === parseInt(post.poster_id) && (
-                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
+                                          <a className="float-right btn btn-outline-primary btn-sm" onClick={(event) => handleEditButtonClick(event, post)} href="">Edit</a>
                                       )}
                                       </h5>
                                       <p className="card-text">{ post.content }</p>
                                       <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                      <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                      <a href="" className="card-link" onClick={(event) => handleLikeButton(event, post.id)}>
                                         {likedPosts.includes(post.id) ? (
                                             <i className="fa-solid fa-heart text-danger"></i>
                                         ) : (
@@ -563,15 +648,15 @@ function App() {
                             <nav aria-label="Page navigation example">
                                 <ul className="pagination justify-content-center">
                                 <li className={`page-item ${!profileHasPreviousPage && 'disabled'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(profileCurrentPage - 1)} tabIndex="-1" aria-disabled={!profileHasPreviousPage}>Previous</a>
+                                    <a className="page-link" href="" onClick={(event) => handleProfilePaginationClick(event, profileCurrentPage - 1)} tabIndex="-1" aria-disabled={!profileHasPreviousPage}>Previous</a>
                                 </li>
                                 {Array.from({ length: profileTotalPages }, (_, index) => (
                                     <li key={index} className={`page-item ${profileCurrentPage === index + 1 && 'active'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(index + 1)}>{index + 1}</a>
+                                    <a className="page-link" href="" onClick={(event) => handleProfilePaginationClick(event, index + 1)}>{index + 1}</a>
                                     </li>
                                 ))}
                                 <li className={`page-item ${!profileHasNextPage && 'disabled'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleProfilePaginationClick(profileCurrentPage + 1)} aria-disabled={!profileHasNextPage}>Next</a>
+                                    <a className="page-link" href="" onClick={(event) => handleProfilePaginationClick(event, profileCurrentPage + 1)} aria-disabled={!profileHasNextPage}>Next</a>
                                 </li>
                                 </ul>
                             </nav>
@@ -593,10 +678,10 @@ function App() {
                         <div className="col-md mt-2">
                             <div className="card">
                                 <div className="card-body">
-                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> </h5>
+                                    <h5 className="card-title"><a href="" onClick={(event) => handlePosterClick(event, post.poster)}>{ post.poster }</a> </h5>
                                     <p className="card-text">{ post.content }</p>
                                     <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
-                                    <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
+                                    <a href="" className="card-link" onClick={(event) => handleLikeButton(event, post.id)}>
                                         {likedPosts.includes(post.id) ? (
                                             <i className="fa-solid fa-heart text-danger"></i>
                                         ) : (
@@ -613,15 +698,15 @@ function App() {
                             <nav aria-label="Page navigation example">
                                 <ul className="pagination justify-content-center">
                                 <li className={`page-item ${!followingHasPreviousPage && 'disabled'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(followingCurrentPage - 1)} tabIndex="-1" aria-disabled={!followingHasPreviousPage}>Previous</a>
+                                    <a className="page-link" href="" onClick={(event) => handleFollowingPaginationClick(event, followingCurrentPage - 1)} tabIndex="-1" aria-disabled={!followingHasPreviousPage}>Previous</a>
                                 </li>
                                 {Array.from({ length: followingTotalPages }, (_, index) => (
                                     <li key={index} className={`page-item ${followingCurrentPage === index + 1 && 'active'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(index + 1)}>{index + 1}</a>
+                                    <a className="page-link" href="" onClick={(event) => handleFollowingPaginationClick(event, index + 1)}>{index + 1}</a>
                                     </li>
                                 ))}
                                 <li className={`page-item ${!followingHasNextPage && 'disabled'}`}>
-                                    <a className="page-link" href="#" onClick={() => handleFollowingPaginationClick(followingCurrentPage + 1)} aria-disabled={!followingHasNextPage}>Next</a>
+                                    <a className="page-link" href="" onClick={(event) => handleFollowingPaginationClick(event, followingCurrentPage + 1)} aria-disabled={!followingHasNextPage}>Next</a>
                                 </li>
                                 </ul>
                             </nav>
