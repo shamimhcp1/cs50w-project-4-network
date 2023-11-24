@@ -359,10 +359,17 @@ function App() {
         .then(result => {
           if (result.status === 'success') {
             // Update the UI with the edited post
-            const updatedPosts = posts.map(post =>
-              post.id === editedPost.postId ? { ...post, content: editedPost.content } : post
-            );
-            setPosts(updatedPosts);
+            if (currentView === 'all-posts') {
+                const updatedPosts = posts.map(post =>
+                    post.id === editedPost.postId ? { ...post, content: editedPost.content } : post
+                );
+                setPosts(updatedPosts);
+            } else if (currentView === 'profile') {
+                const updatedPosts = profilePosts.map(post =>
+                    post.id === editedPost.postId ? { ...post, content: editedPost.content } : post
+                );
+                setProfilePosts(updatedPosts);
+            } 
     
             // Close the modal
             setEditModalVisible(false);
@@ -586,12 +593,7 @@ function App() {
                         <div className="col-md mt-2">
                             <div className="card">
                                 <div className="card-body">
-                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> 
-                                    {/* show edit button if logged user equal to poster id */}
-                                    {user.id === parseInt(post.poster_id) && (
-                                        <a className="float-right btn btn-outline-primary btn-sm" onClick={() => handleEditButtonClick(post)} href="#">Edit</a>
-                                    )}
-                                    </h5>
+                                    <h5 className="card-title"><a href="#" onClick={() => handlePosterClick(post.poster)}>{ post.poster }</a> </h5>
                                     <p className="card-text">{ post.content }</p>
                                     <p className="card-subtitle mb-2 text-muted">{ post.created_date }</p>
                                     <a href="#" className="card-link" onClick={() => handleLikeButton(post.id)}>
