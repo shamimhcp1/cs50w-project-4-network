@@ -1,5 +1,5 @@
 # cs50w-project-4-network
-CS50 Web's fifth project: Design a Twitter-like social network website for making posts and following users.
+**CS50 Web's fifth project:** Design a Twitter-like social network website for making posts and following users.
 
 # Getting Started
 1. Download the distribution code from https://cdn.cs50.net/web/2020/spring/projects/4/network.zip and unzip it.
